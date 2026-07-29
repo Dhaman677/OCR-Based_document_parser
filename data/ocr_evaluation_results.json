@@ -1,0 +1,142 @@
+{
+  "RapidOCR (Raw Images)": {
+    "engine": "rapidocr",
+    "preprocessed": false,
+    "sample_count": 10,
+    "mean_cer": 0.4531,
+    "mean_wer": 0.739,
+    "avg_latency_sec": 3.9212,
+    "sample_results": [
+      {
+        "id": "receipt_train_0000",
+        "cer": 0.4619,
+        "wer": 0.8375,
+        "time_sec": 3.846
+      },
+      {
+        "id": "receipt_train_0001",
+        "cer": 0.5652,
+        "wer": 0.72,
+        "time_sec": 3.567
+      },
+      {
+        "id": "receipt_train_0002",
+        "cer": 0.2092,
+        "wer": 0.6134,
+        "time_sec": 4.639
+      },
+      {
+        "id": "receipt_train_0003",
+        "cer": 0.4469,
+        "wer": 0.8571,
+        "time_sec": 3.879
+      },
+      {
+        "id": "receipt_train_0004",
+        "cer": 0.307,
+        "wer": 0.6286,
+        "time_sec": 4.64
+      },
+      {
+        "id": "receipt_train_0005",
+        "cer": 0.5718,
+        "wer": 0.8667,
+        "time_sec": 2.843
+      },
+      {
+        "id": "receipt_train_0006",
+        "cer": 0.4834,
+        "wer": 0.7935,
+        "time_sec": 4.201
+      },
+      {
+        "id": "receipt_train_0007",
+        "cer": 0.4392,
+        "wer": 0.6167,
+        "time_sec": 3.023
+      },
+      {
+        "id": "receipt_train_0008",
+        "cer": 0.2818,
+        "wer": 0.5096,
+        "time_sec": 4.475
+      },
+      {
+        "id": "receipt_train_0009",
+        "cer": 0.7643,
+        "wer": 0.9469,
+        "time_sec": 4.098
+      }
+    ]
+  },
+  "RapidOCR (Preprocessed Images)": {
+    "engine": "rapidocr",
+    "preprocessed": true,
+    "sample_count": 10,
+    "mean_cer": 0.4484,
+    "mean_wer": 0.637,
+    "avg_latency_sec": 3.828,
+    "sample_results": [
+      {
+        "id": "receipt_train_0000",
+        "cer": 0.4815,
+        "wer": 0.725,
+        "time_sec": 3.809
+      },
+      {
+        "id": "receipt_train_0001",
+        "cer": 0.5833,
+        "wer": 0.81,
+        "time_sec": 3.8
+      },
+      {
+        "id": "receipt_train_0002",
+        "cer": 0.1948,
+        "wer": 0.3193,
+        "time_sec": 4.118
+      },
+      {
+        "id": "receipt_train_0003",
+        "cer": 0.4435,
+        "wer": 0.6667,
+        "time_sec": 3.761
+      },
+      {
+        "id": "receipt_train_0004",
+        "cer": 0.3472,
+        "wer": 0.6214,
+        "time_sec": 4.508
+      },
+      {
+        "id": "receipt_train_0005",
+        "cer": 0.5634,
+        "wer": 0.6833,
+        "time_sec": 2.748
+      },
+      {
+        "id": "receipt_train_0006",
+        "cer": 0.4102,
+        "wer": 0.5677,
+        "time_sec": 5.155
+      },
+      {
+        "id": "receipt_train_0007",
+        "cer": 0.4254,
+        "wer": 0.5833,
+        "time_sec": 2.698
+      },
+      {
+        "id": "receipt_train_0008",
+        "cer": 0.2932,
+        "wer": 0.4904,
+        "time_sec": 3.61
+      },
+      {
+        "id": "receipt_train_0009",
+        "cer": 0.742,
+        "wer": 0.9027,
+        "time_sec": 4.073
+      }
+    ]
+  }
+}
