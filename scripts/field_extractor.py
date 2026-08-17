@@ -21,6 +21,8 @@ import logging
 import argparse
 from typing import List, Dict, Any, Optional, Tuple, Union
 
+from validator import ReceiptValidator, ValidationResult
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("FieldExtractor")
 
@@ -55,7 +57,13 @@ class ExtractedFields:
         address: str = "",
         total: str = "",
         confidences: Optional[Dict[str, float]] = None,
-        extraction_method: str = "hybrid"
+        extraction_method: str = "hybrid",
+        overall_confidence: float = 0.0,
+        is_valid: bool = True,
+        requires_review: bool = False,
+        flags: Optional[List[str]] = None,
+        iso_date: Optional[str] = None,
+        numeric_total: Optional[float] = None
     ):
         self.company = company.strip()
         self.date = date.strip()
@@ -63,6 +71,12 @@ class ExtractedFields:
         self.total = total.strip()
         self.confidences = confidences or {"company": 0.0, "date": 0.0, "address": 0.0, "total": 0.0}
         self.extraction_method = extraction_method
+        self.overall_confidence = overall_confidence or (sum(self.confidences.values()) / max(1, len(self.confidences)))
+        self.is_valid = is_valid
+        self.requires_review = requires_review
+        self.flags = flags or []
+        self.iso_date = iso_date
+        self.numeric_total = numeric_total
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -71,7 +85,13 @@ class ExtractedFields:
             "address": self.address,
             "total": self.total,
             "confidences": self.confidences,
-            "extraction_method": self.extraction_method
+            "overall_confidence": round(self.overall_confidence, 4),
+            "extraction_method": self.extraction_method,
+            "is_valid": self.is_valid,
+            "requires_review": self.requires_review,
+            "flags": self.flags,
+            "iso_date": self.iso_date,
+            "numeric_total": self.numeric_total
         }
 
 
@@ -466,20 +486,36 @@ class HybridFieldExtractor(BaseFieldExtractor):
         address = self._select_address(regex_res.address, layout_res.address)
         total = self._select_total(regex_res.total, layout_res.total)
 
-        conf = {
+        raw_text = full_text if 'full_text' in locals() else ""
+        initial_fields = {
+            "company": company,
+            "date": date,
+            "address": address,
+            "total": total
+        }
+        initial_conf = {
             "company": 0.85 if company else 0.0,
             "date": 0.90 if date else 0.0,
             "address": 0.78 if address else 0.0,
             "total": 0.88 if total else 0.0
         }
 
+        validator = ReceiptValidator(confidence_threshold=0.70)
+        val_res = validator.validate_fields(initial_fields, raw_text=raw_text, method_confidences=initial_conf)
+
         return ExtractedFields(
             company=company,
             date=date,
             address=address,
             total=total,
-            confidences=conf,
-            extraction_method="hybrid"
+            confidences=val_res.confidences,
+            overall_confidence=val_res.overall_confidence,
+            extraction_method="hybrid",
+            is_valid=val_res.is_valid,
+            requires_review=val_res.requires_review,
+            flags=val_res.flags,
+            iso_date=val_res.iso_date,
+            numeric_total=val_res.numeric_total
         )
 
     def _select_company(self, regex_company: str, layout_company: str) -> str:
@@ -541,6 +577,7 @@ def main():
     parser.add_argument("--image", type=str, default=None, help="Path to receipt image file")
     parser.add_argument("--ocr-json", type=str, default=None, help="Path to precomputed OCR JSON file")
     parser.add_argument("--method", type=str, default="hybrid", choices=["regex", "layout", "hybrid"], help="Extraction strategy")
+    parser.add_argument("--threshold", type=float, default=0.70, help="Confidence threshold for review flagging")
     parser.add_argument("--output", type=str, default=None, help="Optional output path for extracted fields JSON")
     args = parser.parse_args()
 
@@ -559,19 +596,35 @@ def main():
     extractor = get_field_extractor(args.method)
     fields = extractor.extract_fields(ocr_data)
 
-    print("\n" + "=" * 50)
+    validator = ReceiptValidator(confidence_threshold=args.threshold)
+    raw_text = ocr_data.get("full_text", "") if isinstance(ocr_data, dict) else str(ocr_data)
+    val_res = validator.validate_fields(
+        {"company": fields.company, "date": fields.date, "address": fields.address, "total": fields.total},
+        raw_text=raw_text,
+        method_confidences=fields.confidences
+    )
+
+    print("\n" + "=" * 55)
     print(f"  EXTRACTED RECEIPT FIELDS ({args.method.upper()})")
-    print("=" * 50)
-    print(f"Company:  {fields.company}")
-    print(f"Date:     {fields.date}")
-    print(f"Address:  {fields.address}")
-    print(f"Total:    {fields.total}")
-    print("=" * 50 + "\n")
+    print("=" * 55)
+    print(f"Company:  {fields.company:<30} (Conf: {val_res.confidences['company']:.2f})")
+    print(f"Date:     {fields.date:<30} (Conf: {val_res.confidences['date']:.2f}, ISO: {val_res.iso_date})")
+    print(f"Address:  {fields.address:<30} (Conf: {val_res.confidences['address']:.2f})")
+    print(f"Total:    {fields.total:<30} (Conf: {val_res.confidences['total']:.2f}, Num: {val_res.numeric_total})")
+    print("-" * 55)
+    print(f"Overall Confidence: {val_res.overall_confidence:.2f}")
+    print(f"Valid:              {val_res.is_valid}")
+    print(f"Requires Review:    {val_res.requires_review}")
+    if val_res.flags:
+        print(f"Warning Flags:      {', '.join(val_res.flags)}")
+    print("=" * 55 + "\n")
 
     if args.output:
         os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)
+        output_dict = val_res.to_dict()
+        output_dict["extraction_method"] = args.method
         with open(args.output, "w", encoding="utf-8") as f:
-            json.dump(fields.to_dict(), f, indent=2, ensure_ascii=False)
+            json.dump(output_dict, f, indent=2, ensure_ascii=False)
         logger.info(f"Saved extracted fields JSON to {args.output}")
 
 
